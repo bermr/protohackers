@@ -4,7 +4,7 @@ SERVER_IP=$1;
 SOLUTION=$2;
 
 mkdir -p bin
-go build -o ./bin/$SOLUTION.out ./$SOLUTION.go
+go build -o ./bin/$SOLUTION.out ./$SOLUTION/$SOLUTION.go
 
 scp -i ../chave-oracle.key ./bin/$SOLUTION.out ubuntu@$SERVER_IP:/home/ubuntu/projects/protohackers/$SOLUTION.out
 
