@@ -41,7 +41,7 @@ func main() {
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	fmt.Printf("New connection from %s\n", conn.RemoteAddr())
-	
+
 	encoder := json.NewEncoder(conn)
 	reader := bufio.NewReader(conn)
 
@@ -54,14 +54,14 @@ func handleConnection(conn net.Conn) {
 		}
 
 		fmt.Println("Data received", string(data))
-		
+
 		var req Request
 		if err := json.Unmarshal(data, &req); err != nil {
 			returnError(conn)
 			return
 		}
 
-    fmt.Printf("Decoded: %+v\n", req)
+		fmt.Printf("Decoded: %+v\n", req)
 		if req.Method != "isPrime" {
 			fmt.Println("Invalid method, closing connection")
 			returnError(conn)
@@ -90,10 +90,10 @@ func handleConnection(conn net.Conn) {
 
 func returnError(conn net.Conn) {
 	response := map[string]string{
-     	"error": "error",
-  }
-  jsonBytes, _ := json.Marshal(response)
-  conn.Write(append(jsonBytes, '\n'))
+		"error": "error",
+	}
+	jsonBytes, _ := json.Marshal(response)
+	conn.Write(append(jsonBytes, '\n'))
 }
 
 func isPrime(n float64) bool {
