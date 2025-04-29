@@ -1,16 +1,15 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 )
 
 type Request struct {
-	Method string  `json:"method"`
-	Number float64 `json:"number"`
+	Method string   `json:"method"`
+	Number *float64 `json:"number"`
 }
 
 type Response struct {
@@ -35,47 +34,48 @@ func main() {
 			continue
 		}
 		go handleConnection(conn)
+		fmt.Println("Connection closed")
 	}
 }
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	fmt.Printf("New connection from %s\n", conn.RemoteAddr())
-
-	var buf bytes.Buffer
-	tee := io.TeeReader(conn, &buf)
-	decoder := json.NewDecoder(tee)
+	
 	encoder := json.NewEncoder(conn)
+	reader := bufio.NewReader(conn)
 
 	for {
+		data, err := reader.ReadBytes('\n')
 
-		var req Request
-		err := decoder.Decode(&req)
-		fmt.Println("Data received", buf.String())
-		buf.Reset()
-		
 		if err != nil {
-			if err == io.EOF {
-				fmt.Println("Connection closed.")
-			} else {
-				fmt.Println("Error decoding JSON", err)
-			}
-			conn.Close()
-			break
+			fmt.Println("Error receiving data", err)
+			return
 		}
 
+		fmt.Println("Data received", string(data))
+		
+		var req Request
+		if err := json.Unmarshal(data, &req); err != nil {
+			returnError(conn)
+			return
+		}
+
+    fmt.Printf("Decoded: %+v\n", req)
 		if req.Method != "isPrime" {
 			fmt.Println("Invalid method, closing connection")
-			break
+			returnError(conn)
+			return
 		}
 
-		if req.Number == 0 {
-			break
+		if req.Number == nil {
+			returnError(conn)
+			return
 		}
 
 		fmt.Println("Request valid. Number: ", req.Number, "Method: ", req.Method)
 
-		result := isPrime(req.Number)
+		result := isPrime(*req.Number)
 		resp := Response{
 			Method: req.Method,
 			Prime:  result,
@@ -83,10 +83,17 @@ func handleConnection(conn net.Conn) {
 		err = encoder.Encode(resp)
 		if err != nil {
 			fmt.Println("Error sending response: ", err)
-			break
+			return
 		}
 	}
-	fmt.Println("Done")
+}
+
+func returnError(conn net.Conn) {
+	response := map[string]string{
+     	"error": "error",
+  }
+  jsonBytes, _ := json.Marshal(response)
+  conn.Write(append(jsonBytes, '\n'))
 }
 
 func isPrime(n float64) bool {
