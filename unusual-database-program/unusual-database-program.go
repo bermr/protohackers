@@ -26,7 +26,7 @@ func main() {
 	database := make(map[string]string)
 
 	for {
-		buf := make([]byte, 1001)
+		buf := make([]byte, 1025)
 		n, addr, err := conn.ReadFrom(buf)
 		if err != nil {
 			fmt.Println("Error reading data", err)
@@ -35,14 +35,14 @@ func main() {
 
 		fmt.Printf("Received from %s: %s\n", addr, string(buf[:n]))
 
-		if n > 1000 {
+		if n > 1024 {
 			fmt.Println("Request too large")
 			conn.WriteTo([]byte("Request size must be shorter than 1000 bytes"), addr)
 			continue
 		}
 
 		strContent := string(buf[:n])
-		strContent = strings.TrimSpace(strContent)
+		strContent = strings.TrimRight(strContent, " \t\r\n")
 
 		isInsert := isInsert(strContent)
 
