@@ -23,38 +23,55 @@ func main() {
 
 	fmt.Println("UDP server listening on port 8080")
 
-	buf := make([]byte, 1001)
 	database := make(map[string]string)
-	
-  for {
-		n, clientAddr, err := conn.ReadFromUDP(buf)
+
+	for {
+		buf := make([]byte, 1001)
+		n, addr, err := conn.ReadFrom(buf)
 		if err != nil {
 			fmt.Println("Error reading data", err)
 			continue
 		}
 
-		fmt.Printf("Received from %s: %s\n", clientAddr, string(buf))
+		fmt.Printf("Received from %s: %s\n", addr, string(buf[:n]))
 
 		if n > 1000 {
-			conn.WriteToUDP([]byte("Request size must be shorter than 1000 bytes"), clientAddr)
+			fmt.Println("Request too large")
+			conn.WriteTo([]byte("Request size must be shorter than 1000 bytes"), addr)
+			continue
 		}
 
-		strContent := string(buf)
+		strContent := string(buf[:n])
+		strContent = strings.TrimSpace(strContent)
 
 		isInsert := isInsert(strContent)
 
 		if isInsert {
 			key, value := splitKeyValue(strContent)
-      fmt.Printf("Key: %v, Value: %v\n", key, value)
-      database[key] = value
-      continue
+			fmt.Printf("Key: %v, Value: %v\n", key, value)
+			if key != "version" {
+				database[key] = value
+			}
+			conn.WriteTo([]byte(""), addr)
+			continue
 		}
 
-    response := database[strContent]
+		var response string
+		if len(database) > 0 {
+			_, ok := database[strContent]
 
-		_, err = conn.WriteToUDP([]byte(response), clientAddr)
+			if ok {
+				response = fmt.Sprintf("%v=%v", strContent, database[strContent])
+			}
+		}
+
+		if strContent == "version" {
+			response = "version=Unusual Database do B"
+		}
+
+		_, err = conn.WriteTo([]byte(response), addr)
 		if err != nil {
-			fmt.Println("Erro ao responder:", err)
+			fmt.Println("Response error", err)
 		}
 	}
 }
