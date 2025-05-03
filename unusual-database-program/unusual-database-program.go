@@ -42,7 +42,6 @@ func main() {
 		}
 
 		strContent := string(buf[:n])
-		strContent = strings.TrimRight(strContent, " \t\r\n")
 
 		isInsert := isInsert(strContent)
 
