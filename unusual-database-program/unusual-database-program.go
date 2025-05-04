@@ -51,7 +51,7 @@ func main() {
 			if key != "version" {
 				database[key] = value
 			}
-			conn.WriteTo([]byte(""), addr)
+				conn.WriteTo([]byte(""), addr)
 			continue
 		}
 
